@@ -1,10 +1,39 @@
 import time
-from collections import deque
+from collections import deque, defaultdict
 from itertools import islice, cycle, chain
 from typing import List, Tuple, Deque
 import numpy as np
 
 N_PICK = 3
+
+
+def move_records(seq: str, steps: int) -> str:
+    N = len(seq)
+    records = {}
+    for cnt in range(steps):
+
+        # always have the current cup the first one in seq
+        curr = int(seq[0])
+        picked = seq[1 : N_PICK + 1]
+        dest = next(
+            x
+            for x in chain(range(curr - 1, 0, -1), range(N, curr, -1))
+            if str(x) not in picked
+        )
+        dest_idx = next(i for i, x in enumerate(seq) if x == str(dest))
+
+        # new seq
+        seq = f"{seq[N_PICK+1:dest_idx]}{dest}{picked}{seq[dest_idx+1:]}{curr}"
+
+        if seq not in records:
+            records[seq] = cnt
+        else:
+            first_cnt = records[seq]
+            n_cycle = cnt - first_cnt
+            new_steps = (steps - 1 - first_cnt) % n_cycle + first_cnt
+            return next(k for k, v in records.items() if v == new_steps)
+
+    return seq
 
 
 def move(seq: str, steps: int) -> str:
@@ -62,7 +91,6 @@ def big_move_np(seq: List[int], steps: int) -> List[int]:
 
         return ans
 
-    prev_t = None
     curr_idx = 0
     for cnt in range(steps):
         if curr_idx > N - N_PICK - 1:
@@ -98,6 +126,10 @@ if __name__ == "__main__":
     final_100 = move(text, 100)
     assert part1(final_10) == "92658374"
     assert part1(final_100) == "67384529"
+
+    ans_r = move_records(text, 10000)
+    ans = move(text, 10000)
+    assert ans == ans_r
 
     # big_seq = list(map(int, list(text))) + list(range(len(text)+1, 1_000_001))
     # final_10m = big_move_np(big_seq, 10_000_000)
